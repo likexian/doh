@@ -31,7 +31,7 @@ type Client struct {
 
 // Provider is the provider interface
 type Provider interface {
-	New(...string) *Client
+	New() *Client
 	Query(context.Context, Domain, Type) (*Response, error)
 	ECSQuery(context.Context, Domain, Type, ECS) (*Response, error)
 	String() string

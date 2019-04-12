@@ -50,7 +50,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.2.0"
+	return "0.3.0"
 }
 
 // Author returns package author
@@ -64,7 +64,7 @@ func License() string {
 }
 
 // New returns a new google provider client
-func New(s ...string) *Client {
+func New() *Client {
 	return &Client{
 		provides: DefaultProvides,
 		xhttp:    xhttp.New(),
@@ -77,8 +77,9 @@ func (c *Client) String() string {
 }
 
 // SetProvides set upstream provides type, google does NOT supported
-func (c *Client) SetProvides(p int) {
+func (c *Client) SetProvides(p int) error {
 	c.provides = DefaultProvides
+	return nil
 }
 
 // Query do DoH query

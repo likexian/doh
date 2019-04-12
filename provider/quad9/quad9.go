@@ -17,7 +17,7 @@
  * https://www.likexian.com/
  */
 
-package cloudflare
+package quad9
 
 import (
 	"bytes"
@@ -39,18 +39,22 @@ type Client struct {
 const (
 	// DefaultProvides is default provides
 	DefaultProvides = iota
+	SecuredProvides
+	UnsecuredProvides
 )
 
 var (
 	// Upstream is DoH query upstream
 	Upstream = map[int]string{
-		DefaultProvides: "https://cloudflare-dns.com/dns-query",
+		DefaultProvides:   "https://9.9.9.9/dns-query",
+		SecuredProvides:   "https://dns9.quad9.net/dns-query",
+		UnsecuredProvides: "https://dns10.quad9.net/dns-query",
 	}
 )
 
 // Version returns package version
 func Version() string {
-	return "0.2.0"
+	return "0.1.0"
 }
 
 // Author returns package author
@@ -63,7 +67,7 @@ func License() string {
 	return "Licensed under the Apache License 2.0"
 }
 
-// New returns a new cloudflare provider client
+// New returns a new quad9 provider client
 func New() *Client {
 	return &Client{
 		provides: DefaultProvides,
@@ -73,12 +77,17 @@ func New() *Client {
 
 // String returns string of provider
 func (c *Client) String() string {
-	return "cloudflare"
+	return "quad9"
 }
 
-// SetProvides set upstream provides type, cloudflare does NOT supported
+// SetProvides set upstream provides type, quad9 does NOT supported
 func (c *Client) SetProvides(p int) error {
-	c.provides = DefaultProvides
+	if _, ok := Upstream[p]; !ok {
+		return fmt.Errorf("quad9: not supported provides: %d", p)
+	}
+
+	c.provides = p
+
 	return nil
 }
 

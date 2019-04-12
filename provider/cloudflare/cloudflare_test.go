@@ -50,12 +50,13 @@ func TestQuery(t *testing.T) {
 
 func TestECSQuery(t *testing.T) {
 	c := New()
-	c.SetProvides(DefaultProvides)
+	err := c.SetProvides(DefaultProvides)
+	assert.Nil(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err := c.ECSQuery(ctx, "xx", doh.TypeA, "1.1.1.1")
+	_, err = c.ECSQuery(ctx, "xx", doh.TypeA, "1.1.1.1")
 	assert.NotNil(t, err)
 
 	_, err = c.ECSQuery(ctx, "likexian.com", doh.TypeA, "xx")

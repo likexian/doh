@@ -17,7 +17,7 @@
  * https://www.likexian.com/
  */
 
-package google
+package quad9
 
 import (
 	"context"
@@ -35,7 +35,7 @@ func TestVersion(t *testing.T) {
 
 func TestString(t *testing.T) {
 	c := New()
-	assert.Equal(t, c.String(), "google")
+	assert.Equal(t, c.String(), "quad9")
 }
 
 func TestQuery(t *testing.T) {
@@ -50,7 +50,11 @@ func TestQuery(t *testing.T) {
 
 func TestECSQuery(t *testing.T) {
 	c := New()
-	err := c.SetProvides(DefaultProvides)
+
+	err := c.SetProvides(9999)
+	assert.NotNil(t, err)
+
+	err = c.SetProvides(DefaultProvides)
 	assert.Nil(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -74,7 +78,14 @@ func TestECSQuery(t *testing.T) {
 	_, err = c.ECSQuery(ctx, "likexian.com", doh.TypeA, "")
 	assert.NotNil(t, err)
 
-	Upstream[DefaultProvides] = "https://dns.google.com/dns"
+	Upstream[DefaultProvides] = "https://dns.quad9.net/dns"
 	_, err = c.ECSQuery(ctx, "likexian.com", doh.TypeA, "")
 	assert.NotNil(t, err)
+
+	err = c.SetProvides(UnsecuredProvides)
+	assert.Nil(t, err)
+
+	rsp, err = c.ECSQuery(ctx, "likexian.com", doh.TypeA, "1.1.1.1")
+	assert.Nil(t, err)
+	assert.Gt(t, len(rsp.Answer), 0)
 }
