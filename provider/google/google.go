@@ -17,7 +17,7 @@
  * https://www.likexian.com/
  */
 
-package provider
+package google
 
 import (
 	"bytes"
@@ -30,25 +30,64 @@ import (
 	"strings"
 )
 
-// Google is a DoH provider
-type Google struct {
+// Client is a DoH provider client
+type Client struct {
+	provides int
+	xhttp    *xhttp.Request
 }
 
-// googleURL is the google DoH url
-var googleURL = "https://dns.google.com/resolve"
+const (
+	// DefaultProvides is default provides
+	DefaultProvides = iota
+)
+
+var (
+	// Upstream is DoH query upstream
+	Upstream = map[int]string{
+		DefaultProvides: "https://dns.google.com/resolve",
+	}
+)
+
+// Version returns package version
+func Version() string {
+	return "0.2.0"
+}
+
+// Author returns package author
+func Author() string {
+	return "[Li Kexian](https://www.likexian.com/)"
+}
+
+// License returns package license
+func License() string {
+	return "Licensed under the Apache License 2.0"
+}
+
+// New returns a new google provider client
+func New(s ...string) *Client {
+	return &Client{
+		provides: DefaultProvides,
+		xhttp:    xhttp.New(),
+	}
+}
 
 // String returns string of provider
-func (p *Google) String() string {
+func (c *Client) String() string {
 	return "google"
 }
 
+// SetProvides set upstream provides type, google does NOT supported
+func (c *Client) SetProvides(p int) {
+	c.provides = DefaultProvides
+}
+
 // Query do DoH query
-func (p *Google) Query(ctx context.Context, d doh.Domain, t doh.Type) (*doh.Response, error) {
-	return p.ECSQuery(ctx, d, t, "")
+func (c *Client) Query(ctx context.Context, d doh.Domain, t doh.Type) (*doh.Response, error) {
+	return c.ECSQuery(ctx, d, t, "")
 }
 
 // ECSQuery do DoH query with the edns0-client-subnet option
-func (p *Google) ECSQuery(ctx context.Context, d doh.Domain, t doh.Type, s doh.ECS) (*doh.Response, error) {
+func (c *Client) ECSQuery(ctx context.Context, d doh.Domain, t doh.Type, s doh.ECS) (*doh.Response, error) {
 	param := xhttp.QueryParam{
 		"name": strings.TrimSpace(string(d)),
 		"type": strings.TrimSpace(string(t)),
@@ -63,7 +102,7 @@ func (p *Google) ECSQuery(ctx context.Context, d doh.Domain, t doh.Type, s doh.E
 		param["edns_client_subnet"] = ss
 	}
 
-	rsp, err := xhttp.Get(googleURL, param, ctx, xhttp.Header{"accept": "application/dns-json"})
+	rsp, err := c.xhttp.Get(Upstream[c.provides], param, ctx, xhttp.Header{"accept": "application/dns-json"})
 	if err != nil {
 		return nil, err
 	}

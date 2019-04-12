@@ -21,10 +21,17 @@ package doh
 
 import (
 	"context"
+	"github.com/likexian/gokit/xhttp"
 )
+
+// Client is a DoH provider client
+type Client struct {
+	xhttp *xhttp.Request
+}
 
 // Provider is the provider interface
 type Provider interface {
+	New(...string) *Client
 	Query(context.Context, Domain, Type) (*Response, error)
 	ECSQuery(context.Context, Domain, Type, ECS) (*Response, error)
 	String() string
