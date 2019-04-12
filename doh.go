@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * A toolkit for Golang development
+ * DNS over HTTPS (DoH) Golang Implementation
  * https://www.likexian.com/
  */
 

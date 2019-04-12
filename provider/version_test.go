@@ -17,7 +17,7 @@
  * https://www.likexian.com/
  */
 
-package doh
+package provider
 
 import (
 	"github.com/likexian/gokit/assert"

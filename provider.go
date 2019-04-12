@@ -20,12 +20,12 @@
 package doh
 
 import (
-	"github.com/likexian/gokit/assert"
-	"testing"
+	"context"
 )
 
-func TestVersion(t *testing.T) {
-	assert.Contains(t, Version(), ".")
-	assert.Contains(t, Author(), "likexian")
-	assert.Contains(t, License(), "Apache License")
+// Provider is the provider interface
+type Provider interface {
+	Query(context.Context, Domain, Type) (*Response, error)
+	ECSQuery(context.Context, Domain, Type, ECS) (*Response, error)
+	String() string
 }
