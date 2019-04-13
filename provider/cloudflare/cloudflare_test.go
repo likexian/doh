@@ -21,7 +21,7 @@ package cloudflare
 
 import (
 	"context"
-	"github.com/likexian/doh-go"
+	"github.com/likexian/doh-go/dns"
 	"github.com/likexian/gokit/assert"
 	"testing"
 	"time"
@@ -43,7 +43,7 @@ func TestQuery(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	rsp, err := c.Query(ctx, "likexian.com", doh.TypeA)
+	rsp, err := c.Query(ctx, "likexian.com", dns.TypeA)
 	assert.Nil(t, err)
 	assert.Gt(t, len(rsp.Answer), 0)
 }
@@ -56,25 +56,25 @@ func TestECSQuery(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err = c.ECSQuery(ctx, "xx", doh.TypeA, "1.1.1.1")
+	_, err = c.ECSQuery(ctx, "xx", dns.TypeA, "1.1.1.1")
 	assert.NotNil(t, err)
 
-	_, err = c.ECSQuery(ctx, "likexian.com", doh.TypeA, "xx")
+	_, err = c.ECSQuery(ctx, "likexian.com", dns.TypeA, "xx")
 	assert.NotNil(t, err)
 
-	rsp, err := c.ECSQuery(ctx, "likexian.com", doh.TypeA, "1.1.1.1")
+	rsp, err := c.ECSQuery(ctx, "likexian.com", dns.TypeA, "1.1.1.1")
 	assert.Nil(t, err)
 	assert.Gt(t, len(rsp.Answer), 0)
 
-	rsp, err = c.ECSQuery(ctx, "likexian.com", doh.TypeA, "1.1.1.1/24")
+	rsp, err = c.ECSQuery(ctx, "likexian.com", dns.TypeA, "1.1.1.1/24")
 	assert.Nil(t, err)
 	assert.Gt(t, len(rsp.Answer), 0)
 
 	Upstream[DefaultProvides] = "test"
-	_, err = c.ECSQuery(ctx, "likexian.com", doh.TypeA, "")
+	_, err = c.ECSQuery(ctx, "likexian.com", dns.TypeA, "")
 	assert.NotNil(t, err)
 
 	Upstream[DefaultProvides] = "https://dns.cloudflare.com/dns"
-	_, err = c.ECSQuery(ctx, "likexian.com", doh.TypeA, "")
+	_, err = c.ECSQuery(ctx, "likexian.com", dns.TypeA, "")
 	assert.NotNil(t, err)
 }

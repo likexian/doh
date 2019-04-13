@@ -20,12 +20,39 @@
 package doh
 
 import (
+	"context"
+	"github.com/likexian/doh-go/dns"
 	"github.com/likexian/gokit/assert"
 	"testing"
+	"time"
 )
 
 func TestVersion(t *testing.T) {
 	assert.Contains(t, Version(), ".")
 	assert.Contains(t, Author(), "likexian")
 	assert.Contains(t, License(), "Apache License")
+}
+
+func TestNew(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	c := New(Quad9Provider)
+	rsp, err := c.Query(ctx, "likexian.com", dns.TypeA)
+	assert.Nil(t, err)
+	assert.Gt(t, len(rsp.Answer), 0)
+
+	c = New(CloudflareProvider)
+	rsp, err = c.Query(ctx, "likexian.com", dns.TypeA)
+	assert.Nil(t, err)
+	assert.Gt(t, len(rsp.Answer), 0)
+
+	c = New(GoogleProvider)
+	rsp, err = c.Query(ctx, "likexian.com", dns.TypeA)
+	assert.Nil(t, err)
+	assert.Gt(t, len(rsp.Answer), 0)
+
+	rsp, err = c.ECSQuery(ctx, "likexian.com", dns.TypeA, "1.1.1.1")
+	assert.Nil(t, err)
+	assert.Gt(t, len(rsp.Answer), 0)
 }

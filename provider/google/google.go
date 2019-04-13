@@ -24,14 +24,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/likexian/doh-go"
+	"github.com/likexian/doh-go/dns"
 	"github.com/likexian/gokit/xhttp"
 	"github.com/likexian/gokit/xip"
 	"strings"
 )
 
-// Client is a DoH provider client
-type Client struct {
+// Provider is a DoH provider client
+type Provider struct {
 	provides int
 	xhttp    *xhttp.Request
 }
@@ -64,31 +64,31 @@ func License() string {
 }
 
 // New returns a new google provider client
-func New() *Client {
-	return &Client{
+func New() *Provider {
+	return &Provider{
 		provides: DefaultProvides,
 		xhttp:    xhttp.New(),
 	}
 }
 
 // String returns string of provider
-func (c *Client) String() string {
+func (c *Provider) String() string {
 	return "google"
 }
 
 // SetProvides set upstream provides type, google does NOT supported
-func (c *Client) SetProvides(p int) error {
+func (c *Provider) SetProvides(p int) error {
 	c.provides = DefaultProvides
 	return nil
 }
 
 // Query do DoH query
-func (c *Client) Query(ctx context.Context, d doh.Domain, t doh.Type) (*doh.Response, error) {
+func (c *Provider) Query(ctx context.Context, d dns.Domain, t dns.Type) (*dns.Response, error) {
 	return c.ECSQuery(ctx, d, t, "")
 }
 
 // ECSQuery do DoH query with the edns0-client-subnet option
-func (c *Client) ECSQuery(ctx context.Context, d doh.Domain, t doh.Type, s doh.ECS) (*doh.Response, error) {
+func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns.ECS) (*dns.Response, error) {
 	param := xhttp.QueryParam{
 		"name": strings.TrimSpace(string(d)),
 		"type": strings.TrimSpace(string(t)),
@@ -114,7 +114,7 @@ func (c *Client) ECSQuery(ctx context.Context, d doh.Domain, t doh.Type, s doh.E
 		return nil, err
 	}
 
-	rr := &doh.Response{}
+	rr := &dns.Response{}
 	err = json.NewDecoder(bytes.NewBuffer(buf)).Decode(rr)
 	if err != nil {
 		return nil, err

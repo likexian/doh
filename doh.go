@@ -19,58 +19,31 @@
 
 package doh
 
-// Domain is dns query domain
-type Domain string
+import (
+	"context"
+	"github.com/likexian/doh-go/dns"
+	"github.com/likexian/doh-go/provider/cloudflare"
+	"github.com/likexian/doh-go/provider/google"
+	"github.com/likexian/doh-go/provider/quad9"
+)
 
-// Type is dns query type
-type Type string
-
-// ECS is the edns0-client-subnet option, for example: 1.2.3.4/24
-type ECS string
-
-// Question is dns query question
-type Question struct {
-	Name string `json:"name"`
-	Type int    `json:"type"`
+// Provider is the provider interface
+type Provider interface {
+	Query(context.Context, dns.Domain, dns.Type) (*dns.Response, error)
+	ECSQuery(context.Context, dns.Domain, dns.Type, dns.ECS) (*dns.Response, error)
+	String() string
 }
 
-// Response is dns query answer
-type Answer struct {
-	Name string `json:"name"`
-	Type int    `json:"type"`
-	TTL  int    `json:"TTL"`
-	Data string `json:"data"`
-}
-
-// Response is dns query response
-type Response struct {
-	Status   int        `json:"Status"`
-	TC       bool       `json:"TC"`
-	RD       bool       `json:"RD"`
-	RA       bool       `json:"RA"`
-	AD       bool       `json:"AD"`
-	CD       bool       `json:"CD"`
-	Question []Question `json:"Question"`
-	Answer   []Answer   `json:"Answer"`
-}
-
-// Supported dns query type
-var (
-	TypeA     = Type("A")
-	TypeAAAA  = Type("AAAA")
-	TypeCNAME = Type("CNAME")
-	TypeMX    = Type("MX")
-	TypeTXT   = Type("TXT")
-	TypeSPF   = Type("SPF")
-	TypeNS    = Type("NS")
-	TypeSOA   = Type("SOA")
-	TypePTR   = Type("PTR")
-	TypeANY   = Type("ANY")
+// DoH Providers
+const (
+	GoogleProvider = iota
+	CloudflareProvider
+	Quad9Provider
 )
 
 // Version returns package version
 func Version() string {
-	return "0.1.0"
+	return "0.2.0"
 }
 
 // Author returns package author
@@ -81,4 +54,16 @@ func Author() string {
 // License returns package license
 func License() string {
 	return "Licensed under the Apache License 2.0"
+}
+
+// New returns a new DoH client, quad9 is default
+func New(provider int) Provider {
+	switch provider {
+	case GoogleProvider:
+		return google.New()
+	case CloudflareProvider:
+		return cloudflare.New()
+	default:
+		return quad9.New()
+	}
 }
