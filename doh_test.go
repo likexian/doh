@@ -51,8 +51,4 @@ func TestNew(t *testing.T) {
 	rsp, err = c.Query(ctx, "likexian.com", dns.TypeA)
 	assert.Nil(t, err)
 	assert.Gt(t, len(rsp.Answer), 0)
-
-	rsp, err = c.ECSQuery(ctx, "likexian.com", dns.TypeA, "1.1.1.1")
-	assert.Nil(t, err)
-	assert.Gt(t, len(rsp.Answer), 0)
 }

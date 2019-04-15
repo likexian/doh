@@ -46,6 +46,10 @@ func TestQuery(t *testing.T) {
 	rsp, err := c.Query(ctx, "likexian.com", dns.TypeA)
 	assert.Nil(t, err)
 	assert.Gt(t, len(rsp.Answer), 0)
+
+	rsp, err = c.Query(ctx, "www.网络.cn", dns.TypeA)
+	assert.Nil(t, err)
+	assert.Gt(t, len(rsp.Answer), 0)
 }
 
 func TestECSQuery(t *testing.T) {
