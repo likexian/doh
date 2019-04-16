@@ -23,6 +23,7 @@ import (
 	"context"
 	"github.com/likexian/doh-go/dns"
 	"github.com/likexian/doh-go/provider/cloudflare"
+	"github.com/likexian/doh-go/provider/dnspod"
 	"github.com/likexian/doh-go/provider/google"
 	"github.com/likexian/doh-go/provider/quad9"
 )
@@ -36,14 +37,15 @@ type Provider interface {
 
 // DoH Providers
 const (
-	GoogleProvider = iota
-	CloudflareProvider
+	CloudflareProvider = iota
+	DNSPodProvider
+	GoogleProvider
 	Quad9Provider
 )
 
 // Version returns package version
 func Version() string {
-	return "0.2.0"
+	return "0.3.0"
 }
 
 // Author returns package author
@@ -59,10 +61,12 @@ func License() string {
 // New returns a new DoH client, quad9 is default
 func New(provider int) Provider {
 	switch provider {
-	case GoogleProvider:
-		return google.New()
 	case CloudflareProvider:
 		return cloudflare.New()
+	case DNSPodProvider:
+		return dnspod.New()
+	case GoogleProvider:
+		return google.New()
 	default:
 		return quad9.New()
 	}

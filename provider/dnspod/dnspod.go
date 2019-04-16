@@ -17,17 +17,16 @@
  * https://www.likexian.com/
  */
 
-package google
+package dnspod
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/likexian/doh-go/dns"
 	"github.com/likexian/gokit/xhttp"
 	"github.com/likexian/gokit/xip"
 	"golang.org/x/net/idna"
+	"strconv"
 	"strings"
 )
 
@@ -45,13 +44,13 @@ const (
 var (
 	// Upstream is DoH query upstream
 	Upstream = map[int]string{
-		DefaultProvides: "https://dns.google.com/resolve",
+		DefaultProvides: "http://119.29.29.29/d",
 	}
 )
 
 // Version returns package version
 func Version() string {
-	return "0.4.0"
+	return "0.1.0"
 }
 
 // Author returns package author
@@ -64,7 +63,7 @@ func License() string {
 	return "Licensed under the Apache License 2.0"
 }
 
-// New returns a new google provider client
+// New returns a new dnspod provider client
 func New() *Provider {
 	return &Provider{
 		provides: DefaultProvides,
@@ -74,10 +73,10 @@ func New() *Provider {
 
 // String returns string of provider
 func (c *Provider) String() string {
-	return "google"
+	return "dnspod"
 }
 
-// SetProvides set upstream provides type, google does NOT supported
+// SetProvides set upstream provides type, dnspod does NOT supported
 func (c *Provider) SetProvides(p int) error {
 	c.provides = DefaultProvides
 	return nil
@@ -90,6 +89,10 @@ func (c *Provider) Query(ctx context.Context, d dns.Domain, t dns.Type) (*dns.Re
 
 // ECSQuery do DoH query with the edns0-client-subnet option
 func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns.ECS) (*dns.Response, error) {
+	if t != dns.TypeA {
+		return nil, fmt.Errorf("doh: only A record type is supported by dnspod")
+	}
+
 	name := strings.TrimSpace(string(d))
 	name, err := idna.ToASCII(name)
 	if err != nil {
@@ -97,8 +100,8 @@ func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns
 	}
 
 	param := xhttp.QueryParam{
-		"name": name,
-		"type": strings.TrimSpace(string(t)),
+		"dn":  name,
+		"ttl": "1",
 	}
 
 	ss := strings.TrimSpace(string(s))
@@ -107,28 +110,57 @@ func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns
 		if err != nil {
 			return nil, err
 		}
-		param["edns_client_subnet"] = ss
+		ips := strings.Split(ss, "/")
+		param["ip"] = ips[0]
 	}
 
-	rsp, err := c.xhttp.Get(Upstream[c.provides], param, ctx, xhttp.Header{"accept": "application/dns-json"})
+	rsp, err := c.xhttp.Get(Upstream[c.provides], param, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	defer rsp.Close()
-	buf, err := rsp.Bytes()
+	if rsp.StatusCode != 200 {
+		return nil, fmt.Errorf("doh: bad status code: %d", rsp.StatusCode)
+	}
+
+	txt, err := rsp.String()
 	if err != nil {
 		return nil, err
 	}
 
-	rr := &dns.Response{}
-	err = json.NewDecoder(bytes.NewBuffer(buf)).Decode(rr)
-	if err != nil {
-		return nil, err
+	rr := &dns.Response{
+		Status:   0,
+		TC:       false,
+		RD:       true,
+		RA:       true,
+		AD:       false,
+		CD:       false,
+		Question: []dns.Question{},
+		Answer:   []dns.Answer{},
+	}
+	rr.Question = append(rr.Question, dns.Question{name, 1})
+
+	txt = strings.TrimSpace(txt)
+	if txt == "" {
+		rr.Status = 3
+		return rr, fmt.Errorf("doh: empty response from server")
 	}
 
-	if rr.Status != 0 {
-		return rr, fmt.Errorf("doh: failed response code %d", rr.Status)
+	ttl := 0
+	ts := strings.Split(txt, ",")
+	if len(ts) == 2 {
+		i, err := strconv.Atoi(ts[1])
+		if err == nil {
+			ttl = i
+		}
+	}
+
+	ts = strings.Split(ts[0], ";")
+	for _, v := range ts {
+		if xip.IsIP(v) {
+			rr.Answer = append(rr.Answer, dns.Answer{name, 1, ttl, v})
+		}
 	}
 
 	return rr, nil
