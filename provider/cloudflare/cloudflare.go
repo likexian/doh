@@ -51,7 +51,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.4.0"
+	return "0.5.0"
 }
 
 // Author returns package author
@@ -121,14 +121,16 @@ func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns
 		return nil, err
 	}
 
-	rr := &dns.Response{}
+	rr := &dns.Response{
+		Provider: c.String(),
+	}
 	err = json.NewDecoder(bytes.NewBuffer(buf)).Decode(rr)
 	if err != nil {
 		return nil, err
 	}
 
 	if rr.Status != 0 {
-		return rr, fmt.Errorf("doh: failed response code %d", rr.Status)
+		return rr, fmt.Errorf("doh: cloudflare: failed response code %d", rr.Status)
 	}
 
 	return rr, nil

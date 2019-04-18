@@ -52,6 +52,7 @@ type Response struct {
 	CD       bool       `json:"CD"`
 	Question []Question `json:"Question"`
 	Answer   []Answer   `json:"Answer"`
+	Provider string     `json:"provider"`
 }
 
 // Supported dns query type
@@ -70,7 +71,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.2.0"
+	return "0.3.0"
 }
 
 // Author returns package author

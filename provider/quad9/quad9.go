@@ -55,7 +55,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.4.0"
+	return "0.5.0"
 }
 
 // Author returns package author
@@ -84,7 +84,7 @@ func (c *Provider) String() string {
 // SetProvides set upstream provides type, quad9 does NOT supported
 func (c *Provider) SetProvides(p int) error {
 	if _, ok := Upstream[p]; !ok {
-		return fmt.Errorf("quad9: not supported provides: %d", p)
+		return fmt.Errorf("doh: quad9: not supported provides: %d", p)
 	}
 
 	c.provides = p
@@ -130,14 +130,16 @@ func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns
 		return nil, err
 	}
 
-	rr := &dns.Response{}
+	rr := &dns.Response{
+		Provider: c.String(),
+	}
 	err = json.NewDecoder(bytes.NewBuffer(buf)).Decode(rr)
 	if err != nil {
 		return nil, err
 	}
 
 	if rr.Status != 0 {
-		return rr, fmt.Errorf("doh: failed response code %d", rr.Status)
+		return rr, fmt.Errorf("doh: quad9: failed response code %d", rr.Status)
 	}
 
 	return rr, nil

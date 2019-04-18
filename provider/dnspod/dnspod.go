@@ -50,7 +50,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.1.0"
+	return "0.2.0"
 }
 
 // Author returns package author
@@ -90,7 +90,7 @@ func (c *Provider) Query(ctx context.Context, d dns.Domain, t dns.Type) (*dns.Re
 // ECSQuery do DoH query with the edns0-client-subnet option
 func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns.ECS) (*dns.Response, error) {
 	if t != dns.TypeA {
-		return nil, fmt.Errorf("doh: only A record type is supported by dnspod")
+		return nil, fmt.Errorf("doh: dnspod: only A record type is supported")
 	}
 
 	name := strings.TrimSpace(string(d))
@@ -121,7 +121,7 @@ func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns
 
 	defer rsp.Close()
 	if rsp.StatusCode != 200 {
-		return nil, fmt.Errorf("doh: bad status code: %d", rsp.StatusCode)
+		return nil, fmt.Errorf("doh: dnspod: bad status code: %d", rsp.StatusCode)
 	}
 
 	txt, err := rsp.String()
@@ -138,13 +138,14 @@ func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns
 		CD:       false,
 		Question: []dns.Question{},
 		Answer:   []dns.Answer{},
+		Provider: c.String(),
 	}
 	rr.Question = append(rr.Question, dns.Question{name, 1})
 
 	txt = strings.TrimSpace(txt)
 	if txt == "" {
 		rr.Status = 3
-		return rr, fmt.Errorf("doh: empty response from server")
+		return rr, fmt.Errorf("doh: dnspod: empty response from server")
 	}
 
 	ttl := 0

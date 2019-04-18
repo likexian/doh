@@ -22,6 +22,7 @@ This module provides a easy way to using DoH as client in golang.
 
     import (
         "github.com/likexian/doh-go"
+        "github.com/likexian/doh-go/dns"
     )
 
 ## Documentation
@@ -30,16 +31,49 @@ Visit the docs on [GoDoc](https://godoc.org/github.com/likexian/doh-go)
 
 ## Example
 
+### Select fastest provider and query (Highly Recommend)
+
 ```go
 // init a context
 ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 defer cancel()
 
-// init doh client
-c := doh.New(Quad9Provider)
+// init doh client, auto select fastest from all providers
+c := doh.Use()
+
+// OR init doh client, auto select provider base on your like
+c := doh.Use(doh.CloudflareProvider, doh.GoogleProvider)
 
 // do doh query
 rsp, err := c.Query(ctx, "likexian.com", dns.TypeA)
+if err != nil {
+    panic(err)
+}
+
+// close the client
+c.End()
+
+// doh dns answer
+answer := rsp.Answer
+
+// print all answer
+for _, a := range answer {
+    fmt.Printf("%s -> %s\n", a.Name, a.Data)
+}
+```
+
+### Specify DoH provider and query (You are Welcome)
+
+```go
+// init a context
+ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+defer cancel()
+
+// init doh client, specify one provider
+c := doh.New(Quad9Provider)
+
+// do doh query
+rsp, err := c.Query(ctx, "likexian.com", dns.TypeMX)
 if err != nil {
     panic(err)
 }
@@ -75,7 +109,7 @@ Google Public DNS is a recursive DNS resolver, similar to other publicly availab
 
 ### DNSPod (Fake DoH)
 
-DNS over HTTP, NOT HTTPS; A record type ONLY. This is something known as HTTPDNS, provided by DNSPod (Tencent Cloud). The backend is a anycast public DNS platform well known in China.
+DNS over HTTP but NOT HTTPS; A record type ONLY. This is something known as HTTPDNS, provided by DNSPod (Tencent Cloud). The backend is a anycast public DNS platform well known in China.
 
 - https://cloud.tencent.com/document/product/379/3524
 
