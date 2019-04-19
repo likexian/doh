@@ -59,11 +59,15 @@ func TestNew(t *testing.T) {
 }
 
 func TestUse(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	c := Use(CloudflareProvider, DNSPodProvider, GoogleProvider, Quad9Provider)
-	for i := 0; i < 30; i++ {
+	c := Use()
+	_, err := c.Query(ctx, "likexian", dns.TypeA)
+	assert.NotNil(t, err)
+
+	c = Use(CloudflareProvider, DNSPodProvider, GoogleProvider, Quad9Provider)
+	for i := 0; i < 100; i++ {
 		for _, v := range []dns.Type{dns.TypeA, dns.TypeMX} {
 			rsp, err := c.Query(ctx, "likexian.com", v)
 			assert.Nil(t, err)
