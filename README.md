@@ -6,7 +6,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/likexian/doh-go)](https://goreportcard.com/report/github.com/likexian/doh-go)
 [![Code Cover](https://codecov.io/gh/likexian/doh-go/graph/badge.svg)](https://codecov.io/gh/likexian/doh-go)
 
-doh-go is a DNS over HTTPS (DoH) Golang client implementation.
+doh-go is a DNS over HTTPS (DoH) Golang Client implementation.
 
 ## Overview
 
@@ -38,10 +38,8 @@ Visit the docs on [GoDoc](https://godoc.org/github.com/likexian/doh-go)
 ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 defer cancel()
 
-// init doh client, auto select fastest from all providers
-c := doh.Use()
-
-// OR init doh client, auto select provider base on your like
+// init doh client, auto select the fastest provider base on your like
+// you can also use as: c := doh.Use(), it will select from all providers
 c := doh.Use(doh.CloudflareProvider, doh.GoogleProvider)
 
 // do doh query

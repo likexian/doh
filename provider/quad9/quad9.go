@@ -42,7 +42,7 @@ const (
 	DefaultProvides = iota
 	// SecuredProvides Provides: Security blocklist, DNSSEC, No EDNS Client-Subnet sent
 	SecuredProvides
-	// Unsecured Provides: No security blocklist, no DNSSEC, No EDNS Client-Subnet sent
+	// UnsecuredProvides Provides: No security blocklist, no DNSSEC, No EDNS Client-Subnet sent
 	UnsecuredProvides
 )
 
