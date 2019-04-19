@@ -66,7 +66,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.4.0"
+	return "0.5.0"
 }
 
 // Author returns package author
@@ -188,15 +188,25 @@ func (c *DoH) fastECSQuery(ctx context.Context, ps []Provider, d dns.Domain, t d
 	}
 
 	total := 0
+	result := &dns.Response{
+		Status: -1,
+	}
+
 	for {
 		select {
 		case v := <-r:
 			total += 1
 			if v != nil {
-				return v.(*dns.Response), nil
+				cancels()
+				result = v.(*dns.Response)
 			}
 			if total >= len(ps) {
-				return nil, fmt.Errorf("doh: all query failed")
+				close(r)
+				if result.Status == -1 {
+					return nil, fmt.Errorf("doh: all query failed")
+				} else {
+					return result, nil
+				}
 			}
 		}
 	}
