@@ -34,7 +34,7 @@ type Question struct {
 	Type int    `json:"type"`
 }
 
-// Response is dns query answer
+// Answer is dns query answer
 type Answer struct {
 	Name string `json:"name"`
 	Type int    `json:"type"`

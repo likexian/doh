@@ -204,9 +204,8 @@ func (c *DoH) fastECSQuery(ctx context.Context, ps []Provider, d dns.Domain, t d
 				close(r)
 				if result.Status == -1 {
 					return nil, fmt.Errorf("doh: all query failed")
-				} else {
-					return result, nil
 				}
+				return result, nil
 			}
 		}
 	}

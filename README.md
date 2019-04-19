@@ -101,15 +101,15 @@ Cloudflare's mission is to help build a better Internet. We're excited today to 
 
 - https://developers.cloudflare.com/1.1.1.1/dns-over-https/
 
-### Google (NOT work in China mainlan)
+### Google (NOT work in Mainland China)
 
-Google Public DNS is a recursive DNS resolver, similar to other publicly available services. We think it provides many benefits, including improved security, fast performance, and more valid results.
+Google Public DNS is a recursive DNS resolver, similar to other publicly available services. We think it provides many benefits, including improved security, fast performance, and more valid results. But it is not work in mainland China.
 
 - https://developers.google.com/speed/public-dns/docs/dns-over-https
 
 ### DNSPod (Fake DoH)
 
-DNS over HTTP but NOT HTTPS; A record type ONLY. This is something known as HTTPDNS, provided by DNSPod (Tencent Cloud). The backend is a anycast public DNS platform well known in China.
+DNS over HTTP but NOT HTTPS and A record only. This is something known as HTTPDNS, provided by DNSPod (Tencent Cloud). The backend is a anycast public DNS platform well known in China.
 
 - https://cloud.tencent.com/document/product/379/3524
 
