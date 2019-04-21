@@ -14,6 +14,14 @@ DNS over HTTPS (DoH) is a protocol for performing remote Domain Name System (DNS
 
 This module provides a easy way to using DoH as client in golang.
 
+## Features
+
+- DoH client, Simple and Easy to use
+- Support cloudflare, google, quad9 and dnspod
+- Specify the provider you like
+- Auto select fastest provider
+- EDNS0-Client-Subnet query supported
+
 ## Installation
 
     go get -u github.com/likexian/doh-go
