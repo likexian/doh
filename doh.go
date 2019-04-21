@@ -66,7 +66,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.5.0"
+	return "0.5.1"
 }
 
 // Author returns package author
@@ -112,7 +112,7 @@ func Use(provider ...int) *DoH {
 	}
 
 	go func() {
-		t := time.NewTicker(time.Duration(5) * time.Second)
+		t := time.NewTicker(time.Duration(3) * time.Second)
 		for {
 			select {
 			case <-c.end:

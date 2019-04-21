@@ -25,7 +25,6 @@ import (
 	"github.com/likexian/doh-go/dns"
 	"github.com/likexian/gokit/xhttp"
 	"github.com/likexian/gokit/xip"
-	"golang.org/x/net/idna"
 	"strconv"
 	"strings"
 )
@@ -50,7 +49,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.2.0"
+	return "0.2.1"
 }
 
 // Author returns package author
@@ -93,8 +92,7 @@ func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns
 		return nil, fmt.Errorf("doh: dnspod: only A record type is supported")
 	}
 
-	name := strings.TrimSpace(string(d))
-	name, err := idna.ToASCII(name)
+	name, err := d.Punycode()
 	if err != nil {
 		return nil, err
 	}

@@ -29,3 +29,12 @@ func TestVersion(t *testing.T) {
 	assert.Contains(t, Author(), "likexian")
 	assert.Contains(t, License(), "Apache License")
 }
+
+func TestToPunycode(t *testing.T) {
+	_, err := Domain("*.likexian.com").Punycode()
+	assert.NotNil(t, err)
+
+	n, err := Domain("likexian.com").Punycode()
+	assert.Nil(t, err)
+	assert.Equal(t, n, "likexian.com")
+}
