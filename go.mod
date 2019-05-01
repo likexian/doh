@@ -1,7 +1,9 @@
 module github.com/likexian/doh-go
 
+go 1.12
+
 require (
-	github.com/likexian/gokit v0.0.0-20190418170008-ace88ad0983b
-	github.com/likexian/simplejson-go v0.0.0-20190419151922-c1f9f0b4f084 // indirect
-	golang.org/x/net v0.0.0-20190420063019-afa5a82059c6
+	github.com/likexian/gokit v0.0.0-20190501133040-e77ea8b19cdc
+	golang.org/x/net v0.0.0-20190501004415-9ce7a6920f09
+	golang.org/x/text v0.3.2 // indirect
 )

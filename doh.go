@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * DNS over HTTPS (DoH) Golang Implementation
+ * DNS over HTTPS (DoH) Golang implementation
  * https://www.likexian.com/
  */
 
@@ -27,6 +27,8 @@ import (
 	"github.com/likexian/doh-go/provider/dnspod"
 	"github.com/likexian/doh-go/provider/google"
 	"github.com/likexian/doh-go/provider/quad9"
+	"github.com/likexian/gokit/xcache"
+	"github.com/likexian/gokit/xhash"
 	"sync"
 	"time"
 )
@@ -41,8 +43,9 @@ type Provider interface {
 // DoH is doh client
 type DoH struct {
 	providers []Provider
+	cache     xcache.Cachex
 	stats     map[int][]interface{}
-	end       chan bool
+	stopc     chan bool
 	sync.RWMutex
 }
 
@@ -66,7 +69,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.5.1"
+	return "0.6.0"
 }
 
 // Author returns package author
@@ -94,13 +97,14 @@ func New(provider int) Provider {
 }
 
 // Use returns a new DoH client,
-// You can specify multiple provider,
-// and it will try to select the fastest
+// You can specify one or multiple provider,
+// if multiple, it will try to select the fastest
 func Use(provider ...int) *DoH {
 	c := &DoH{
 		providers: []Provider{},
+		cache:     nil,
 		stats:     map[int][]interface{}{},
-		end:       make(chan bool),
+		stopc:     make(chan bool),
 	}
 
 	if len(provider) == 0 {
@@ -115,7 +119,7 @@ func Use(provider ...int) *DoH {
 		t := time.NewTicker(time.Duration(3) * time.Second)
 		for {
 			select {
-			case <-c.end:
+			case <-c.stopc:
 				t.Stop()
 				return
 			case <-t.C:
@@ -129,9 +133,23 @@ func Use(provider ...int) *DoH {
 	return c
 }
 
-// End end doh client
-func (c *DoH) End() {
-	c.end <- true
+// EnableCache enable query cache
+func (c *DoH) EnableCache(cache bool) *DoH {
+	if cache {
+		c.cache = xcache.New(xcache.MemoryCache)
+	} else {
+		c.cache = nil
+	}
+
+	return c
+}
+
+// Close close doh client
+func (c *DoH) Close() {
+	c.stopc <- true
+	if c.cache != nil {
+		c.cache.Close()
+	}
 }
 
 // Query do DoH query
@@ -141,16 +159,18 @@ func (c *DoH) Query(ctx context.Context, d dns.Domain, t dns.Type) (*dns.Respons
 
 // ECSQuery do DoH query with the edns0-client-subnet option
 func (c *DoH) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns.ECS) (*dns.Response, error) {
-	if len(c.stats) > 0 {
+	c.RLock()
+	stats := c.stats
+	c.RUnlock()
+
+	if len(stats) > 0 {
 		min := []interface{}{0, 100.0}
-		c.RLock()
-		for k, v := range c.stats {
+		for k, v := range stats {
 			r := v[2].(float64)
 			if r < min[1].(float64) {
 				min = []interface{}{k, r}
 			}
 		}
-		c.RUnlock()
 		rsp, err := c.fastECSQuery(ctx, []Provider{c.providers[min[0].(int)]}, d, t, s)
 		if err == nil {
 			return rsp, err
@@ -162,6 +182,15 @@ func (c *DoH) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns.ECS)
 
 // fastECSQuery do query and returns the fastest result
 func (c *DoH) fastECSQuery(ctx context.Context, ps []Provider, d dns.Domain, t dns.Type, s dns.ECS) (*dns.Response, error) {
+	cacheKey := ""
+	if c.cache != nil {
+		cacheKey = xhash.Sha1(string(d), string(t), string(s)).Hex()
+		v := c.cache.Get(cacheKey)
+		if v != nil {
+			return v.(*dns.Response), nil
+		}
+	}
+
 	ctxs, cancels := context.WithCancel(ctx)
 	defer cancels()
 
@@ -199,6 +228,13 @@ func (c *DoH) fastECSQuery(ctx context.Context, ps []Provider, d dns.Domain, t d
 			if v != nil {
 				cancels()
 				result = v.(*dns.Response)
+				if cacheKey != "" {
+					ttl := 30
+					if len(result.Answer) > 0 {
+						ttl = result.Answer[0].TTL
+					}
+					c.cache.Set(cacheKey, result, int64(ttl))
+				}
 			}
 			if total >= len(ps) {
 				close(r)

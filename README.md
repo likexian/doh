@@ -6,7 +6,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/likexian/doh-go)](https://goreportcard.com/report/github.com/likexian/doh-go)
 [![Code Cover](https://codecov.io/gh/likexian/doh-go/graph/badge.svg)](https://codecov.io/gh/likexian/doh-go)
 
-doh-go is a DNS over HTTPS (DoH) Golang Client implementation.
+doh-go is a DNS over HTTPS (DoH) Golang client implementation.
 
 ## Overview
 
@@ -20,6 +20,7 @@ This module provides a easy way to using DoH as client in golang.
 - Support cloudflare, google, quad9 and dnspod
 - Specify the provider you like
 - Auto select fastest provider
+- Enable cache is supported
 - EDNS0-Client-Subnet query supported
 
 ## Installation
@@ -57,7 +58,7 @@ if err != nil {
 }
 
 // close the client
-c.End()
+c.Close()
 
 // doh dns answer
 answer := rsp.Answer

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * DNS over HTTPS (DoH) Golang Implementation
+ * DNS over HTTPS (DoH) Golang implementation
  * https://www.likexian.com/
  */
 
@@ -63,6 +63,8 @@ func TestUse(t *testing.T) {
 	defer cancel()
 
 	c := Use()
+	defer c.Close()
+
 	_, err := c.Query(ctx, "likexian", dns.TypeA)
 	assert.NotNil(t, err)
 
@@ -74,5 +76,36 @@ func TestUse(t *testing.T) {
 			assert.Gt(t, len(rsp.Answer), 0)
 		}
 	}
-	c.End()
+}
+
+func TestEnableCache(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	c := Use()
+	defer c.Close()
+
+	c.EnableCache(true)
+	rsp, err := c.Query(ctx, "likexian.com", dns.TypeA)
+	assert.Nil(t, err)
+	assert.Gt(t, len(rsp.Answer), 0)
+	ttl := rsp.Answer[0].TTL
+
+	time.Sleep(1 * time.Second)
+	rsp, err = c.Query(ctx, "likexian.com", dns.TypeA)
+	assert.Nil(t, err)
+	assert.Gt(t, len(rsp.Answer), 0)
+	assert.Equal(t, rsp.Answer[0].TTL, ttl)
+
+	c.EnableCache(false)
+	rsp, err = c.Query(ctx, "likexian.com", dns.TypeA)
+	assert.Nil(t, err)
+	assert.Gt(t, len(rsp.Answer), 0)
+	ttl = rsp.Answer[0].TTL
+
+	time.Sleep(1 * time.Second)
+	rsp, err = c.Query(ctx, "likexian.com", dns.TypeA)
+	assert.Nil(t, err)
+	assert.Gt(t, len(rsp.Answer), 0)
+	assert.NotEqual(t, rsp.Answer[0].TTL, ttl)
 }
