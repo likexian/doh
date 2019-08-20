@@ -24,16 +24,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/likexian/doh-go/dns"
 	"github.com/likexian/gokit/xhttp"
 	"github.com/likexian/gokit/xip"
-	"strings"
 )
 
 // Provider is a DoH provider client
 type Provider struct {
 	provides int
-	xhttp    *xhttp.Request
 }
 
 const (
@@ -50,7 +50,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.5.1"
+	return "0.5.2"
 }
 
 // Author returns package author
@@ -67,7 +67,6 @@ func License() string {
 func New() *Provider {
 	return &Provider{
 		provides: DefaultProvides,
-		xhttp:    xhttp.New(),
 	}
 }
 
@@ -108,7 +107,7 @@ func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns
 		param["edns_client_subnet"] = ss
 	}
 
-	rsp, err := c.xhttp.Get(Upstream[c.provides], param, ctx, xhttp.Header{"accept": "application/dns-json"})
+	rsp, err := xhttp.New().Get(Upstream[c.provides], param, ctx, xhttp.Header{"accept": "application/dns-json"})
 	if err != nil {
 		return nil, err
 	}

@@ -22,6 +22,9 @@ package doh
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/likexian/doh-go/dns"
 	"github.com/likexian/doh-go/provider/cloudflare"
 	"github.com/likexian/doh-go/provider/dnspod"
@@ -29,8 +32,6 @@ import (
 	"github.com/likexian/doh-go/provider/quad9"
 	"github.com/likexian/gokit/xcache"
 	"github.com/likexian/gokit/xhash"
-	"sync"
-	"time"
 )
 
 // Provider is the provider interface
@@ -69,7 +70,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.6.0"
+	return "0.6.1"
 }
 
 // Author returns package author
@@ -224,7 +225,7 @@ func (c *DoH) fastECSQuery(ctx context.Context, ps []Provider, d dns.Domain, t d
 	for {
 		select {
 		case v := <-r:
-			total += 1
+			total++
 			if v != nil {
 				cancels()
 				result = v.(*dns.Response)

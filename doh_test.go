@@ -21,10 +21,12 @@ package doh
 
 import (
 	"context"
-	"github.com/likexian/doh-go/dns"
-	"github.com/likexian/gokit/assert"
+	"sync"
 	"testing"
 	"time"
+
+	"github.com/likexian/doh-go/dns"
+	"github.com/likexian/gokit/assert"
 )
 
 func TestVersion(t *testing.T) {
@@ -108,4 +110,25 @@ func TestEnableCache(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Gt(t, len(rsp.Answer), 0)
 	assert.NotEqual(t, rsp.Answer[0].TTL, ttl)
+}
+
+func TestConcurrentQuery(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	var wg sync.WaitGroup
+
+	c := Use(CloudflareProvider, DNSPodProvider, GoogleProvider, Quad9Provider)
+	defer c.Close()
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			rsp, err := c.Query(ctx, "likexian.com", dns.TypeA)
+			assert.Nil(t, err)
+			assert.Gt(t, len(rsp.Answer), 0)
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
 }

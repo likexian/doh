@@ -22,17 +22,17 @@ package dnspod
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/likexian/doh-go/dns"
 	"github.com/likexian/gokit/xhttp"
 	"github.com/likexian/gokit/xip"
-	"strconv"
-	"strings"
 )
 
 // Provider is a DoH provider client
 type Provider struct {
 	provides int
-	xhttp    *xhttp.Request
 }
 
 const (
@@ -49,7 +49,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.2.1"
+	return "0.2.2"
 }
 
 // Author returns package author
@@ -66,7 +66,6 @@ func License() string {
 func New() *Provider {
 	return &Provider{
 		provides: DefaultProvides,
-		xhttp:    xhttp.New(),
 	}
 }
 
@@ -112,7 +111,7 @@ func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns
 		param["ip"] = ips[0]
 	}
 
-	rsp, err := c.xhttp.Get(Upstream[c.provides], param, ctx)
+	rsp, err := xhttp.New().Get(Upstream[c.provides], param, ctx)
 	if err != nil {
 		return nil, err
 	}
