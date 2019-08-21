@@ -49,7 +49,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.2.2"
+	return "0.2.3"
 }
 
 // Author returns package author
@@ -137,7 +137,7 @@ func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns
 		Answer:   []dns.Answer{},
 		Provider: c.String(),
 	}
-	rr.Question = append(rr.Question, dns.Question{name, 1})
+	rr.Question = append(rr.Question, dns.Question{Name: name, Type: 1})
 
 	txt = strings.TrimSpace(txt)
 	if txt == "" {
@@ -157,7 +157,7 @@ func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns
 	ts = strings.Split(ts[0], ";")
 	for _, v := range ts {
 		if xip.IsIP(v) {
-			rr.Answer = append(rr.Answer, dns.Answer{name, 1, ttl, v})
+			rr.Answer = append(rr.Answer, dns.Answer{Name: name, Type: 1, TTL: ttl, Data: v})
 		}
 	}
 
