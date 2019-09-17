@@ -92,6 +92,7 @@ func License() string {
 // Punycode returns punycode of domain
 func (d Domain) Punycode() (string, error) {
 	name := strings.TrimSpace(string(d))
-	name, err := idna.New(idna.MapForLookup()).ToASCII(name)
+	name, err := idna.New(idna.MapForLookup(),
+		idna.StrictDomainName(false)).ToASCII(name)
 	return name, err
 }
