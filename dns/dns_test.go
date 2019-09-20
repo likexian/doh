@@ -20,8 +20,9 @@
 package dns
 
 import (
-	"github.com/likexian/gokit/assert"
 	"testing"
+
+	"github.com/likexian/gokit/assert"
 )
 
 func TestVersion(t *testing.T) {
@@ -31,8 +32,11 @@ func TestVersion(t *testing.T) {
 }
 
 func TestToPunycode(t *testing.T) {
-	_, err := Domain("*.likexian.com").Punycode()
-	assert.NotNil(t, err)
+	_, err := Domain("中文.com").Punycode()
+	assert.Nil(t, err)
+
+	_, err = Domain("_esni.likexian.com").Punycode()
+	assert.Nil(t, err)
 
 	n, err := Domain("likexian.com").Punycode()
 	assert.Nil(t, err)

@@ -20,8 +20,9 @@
 package dns
 
 import (
-	"golang.org/x/net/idna"
 	"strings"
+
+	"golang.org/x/net/idna"
 )
 
 // Domain is dns query domain
@@ -76,7 +77,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.3.1"
+	return "0.3.2"
 }
 
 // Author returns package author
@@ -92,7 +93,10 @@ func License() string {
 // Punycode returns punycode of domain
 func (d Domain) Punycode() (string, error) {
 	name := strings.TrimSpace(string(d))
-	name, err := idna.New(idna.MapForLookup(),
-		idna.StrictDomainName(false)).ToASCII(name)
-	return name, err
+
+	return idna.New(
+		idna.MapForLookup(),
+		idna.Transitional(true),
+		idna.StrictDomainName(false),
+	).ToASCII(name)
 }
