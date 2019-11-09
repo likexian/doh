@@ -49,7 +49,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.2.3"
+	return "0.2.4"
 }
 
 // Author returns package author
@@ -111,7 +111,7 @@ func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns
 		param["ip"] = ips[0]
 	}
 
-	rsp, err := xhttp.New().Get(Upstream[c.provides], param, ctx)
+	rsp, err := xhttp.New().Get(ctx, Upstream[c.provides], param)
 	if err != nil {
 		return nil, err
 	}
