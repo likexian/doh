@@ -116,10 +116,10 @@ func TestConcurrentQuery(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	var wg sync.WaitGroup
-
 	c := Use(CloudflareProvider, DNSPodProvider, GoogleProvider, Quad9Provider)
 	defer c.Close()
+
+	var wg sync.WaitGroup
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func() {

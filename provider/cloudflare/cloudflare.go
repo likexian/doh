@@ -50,7 +50,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.5.2"
+	return "0.5.3"
 }
 
 // Author returns package author
@@ -107,7 +107,7 @@ func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns
 		param["edns_client_subnet"] = ss
 	}
 
-	rsp, err := xhttp.New().Get(Upstream[c.provides], param, ctx, xhttp.Header{"accept": "application/dns-json"})
+	rsp, err := xhttp.New().Get(ctx, Upstream[c.provides], param, xhttp.Header{"accept": "application/dns-json"})
 	if err != nil {
 		return nil, err
 	}
