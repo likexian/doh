@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Li Kexian
+ * Copyright 2019-2024 Li Kexian
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,11 @@ package cloudflare
 
 import (
 	"context"
-	"github.com/likexian/doh-go/dns"
-	"github.com/likexian/gokit/assert"
 	"testing"
 	"time"
+
+	"github.com/likexian/doh-go/dns"
+	"github.com/likexian/gokit/assert"
 )
 
 func TestVersion(t *testing.T) {

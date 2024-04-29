@@ -122,7 +122,7 @@ DNS over HTTP but NOT HTTPS and A record only. This is something known as HTTPDN
 
 ## LICENSE
 
-Copyright 2019 Li Kexian
+Copyright 2019-2024 Li Kexian
 
 Licensed under the Apache License 2.0
 
