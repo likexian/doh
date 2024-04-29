@@ -51,7 +51,7 @@ const (
 var (
 	// upstreams is DoH upstreams
 	upstreams = map[uint]string{
-		DefaultProvider: "https://doh.pub/dns-query",
+		DefaultProvider: "https://1.12.12.12/dns-query",
 	}
 	// httpClient is DoH http client
 	httpClient = &http.Client{
@@ -71,7 +71,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.6.0"
+	return "0.6.1"
 }
 
 // Author returns package author
