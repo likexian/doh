@@ -22,6 +22,7 @@ package doh
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -34,10 +35,12 @@ import (
 	"github.com/likexian/gokit/xhash"
 )
 
+// provider is provider
+type provider uint
+
 // Provider is the provider interface
 type Provider interface {
-	Query(context.Context, dns.Domain, dns.Type) (*dns.Response, error)
-	ECSQuery(context.Context, dns.Domain, dns.Type, dns.ECS) (*dns.Response, error)
+	Query(context.Context, dns.Domain, dns.Type, ...dns.ECS) (*dns.Response, error)
 	String() string
 }
 
@@ -52,7 +55,7 @@ type DoH struct {
 
 // DoH Providers enum
 const (
-	CloudflareProvider = iota
+	CloudflareProvider provider = iota
 	DNSPodProvider
 	GoogleProvider
 	Quad9Provider
@@ -60,7 +63,7 @@ const (
 
 // DoH Providers list
 var (
-	Providers = []int{
+	Providers = []provider{
 		CloudflareProvider,
 		DNSPodProvider,
 		GoogleProvider,
@@ -84,23 +87,23 @@ func License() string {
 }
 
 // New returns a new DoH client, quad9 is default
-func New(provider int) Provider {
+func New(provider provider) Provider {
 	switch provider {
 	case CloudflareProvider:
-		return cloudflare.New()
+		return cloudflare.NewClient()
 	case DNSPodProvider:
-		return dnspod.New()
+		return dnspod.NewClient()
 	case GoogleProvider:
-		return google.New()
+		return google.NewClient()
 	default:
-		return quad9.New()
+		return quad9.NewClient()
 	}
 }
 
 // Use returns a new DoH client,
 // You can specify one or multiple provider,
 // if multiple, it will try to select the fastest
-func Use(provider ...int) *DoH {
+func Use(provider ...provider) *DoH {
 	c := &DoH{
 		providers: []Provider{},
 		cache:     nil,
@@ -117,7 +120,7 @@ func Use(provider ...int) *DoH {
 	}
 
 	go func() {
-		t := time.NewTicker(time.Duration(3) * time.Second)
+		t := time.NewTicker(time.Duration(5) * time.Second)
 		for {
 			select {
 			case <-c.stopc:
@@ -154,39 +157,35 @@ func (c *DoH) Close() {
 }
 
 // Query do DoH query
-func (c *DoH) Query(ctx context.Context, d dns.Domain, t dns.Type) (*dns.Response, error) {
-	return c.ECSQuery(ctx, d, t, "")
-}
+func (c *DoH) Query(ctx context.Context, d dns.Domain, t dns.Type, s ...dns.ECS) (*dns.Response, error) {
+	providers := c.providers
 
-// ECSQuery do DoH query with the edns0-client-subnet option
-func (c *DoH) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns.ECS) (*dns.Response, error) {
 	c.RLock()
-	stats := c.stats
-	c.RUnlock()
-
-	if len(stats) > 0 {
+	if len(c.stats) > 0 {
 		min := []interface{}{0, 100.0}
-		for k, v := range stats {
+		for k, v := range c.stats {
 			r := v[2].(float64)
 			if r < min[1].(float64) {
 				min = []interface{}{k, r}
 			}
 		}
-		rsp, err := c.fastECSQuery(ctx, []Provider{c.providers[min[0].(int)]}, d, t, s)
-		if err == nil {
-			return rsp, nil
-		}
+		providers = []Provider{c.providers[min[0].(int)]}
 	}
+	c.RUnlock()
 
-	return c.fastECSQuery(ctx, c.providers, d, t, s)
+	return c.fastQuery(ctx, providers, d, t, s...)
 }
 
-// fastECSQuery do query and returns the fastest result
-func (c *DoH) fastECSQuery(ctx context.Context,
-	ps []Provider, d dns.Domain, t dns.Type, s dns.ECS) (*dns.Response, error) {
+// fastQuery do query and returns the fastest result
+func (c *DoH) fastQuery(ctx context.Context,
+	ps []Provider, d dns.Domain, t dns.Type, s ...dns.ECS) (*dns.Response, error) {
 	cacheKey := ""
 	if c.cache != nil {
-		cacheKey = xhash.Sha1(string(d), string(t), string(s)).Hex()
+		var ss string
+		if len(s) > 0 && s[0] != "" {
+			ss = strings.TrimSpace(string(s[0]))
+		}
+		cacheKey = xhash.Sha1(string(d), string(t), ss).Hex()
 		v := c.cache.Get(cacheKey)
 		if v != nil {
 			return v.(*dns.Response), nil
@@ -199,7 +198,7 @@ func (c *DoH) fastECSQuery(ctx context.Context,
 	r := make(chan interface{})
 	for k, p := range ps {
 		go func(k int, p Provider) {
-			rsp, err := p.ECSQuery(ctxs, d, t, s)
+			rsp, err := p.Query(ctxs, d, t, s...)
 			c.Lock()
 			if _, ok := c.stats[k]; !ok {
 				c.stats[k] = []interface{}{0, 0, 100}

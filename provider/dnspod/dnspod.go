@@ -21,35 +21,57 @@ package dnspod
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"strconv"
+	"io"
+	"net"
+	"net/http"
+	"net/url"
 	"strings"
+	"time"
 
 	"github.com/likexian/doh/dns"
-	"github.com/likexian/gokit/xhttp"
-	"github.com/likexian/gokit/xip"
 )
 
-// Provider is a DoH provider client
-type Provider struct {
-	provides int
+// provider is provider
+type provider uint
+
+// Client is DoH provider client
+type Client struct {
+	provider provider
 }
 
 const (
-	// DefaultProvides is default provides
-	DefaultProvides = iota
+	// DefaultProvider is default provider
+	DefaultProvider = iota
+	// lastProvider is last provider
+	lastProvider
 )
 
 var (
-	// Upstream is DoH query upstream
-	Upstream = map[int]string{
-		DefaultProvides: "http://119.29.29.29/d",
+	// upstreams is DoH upstreams
+	upstreams = map[uint]string{
+		DefaultProvider: "https://doh.pub/dns-query",
+	}
+	// httpClient is DoH http client
+	httpClient = &http.Client{
+		Timeout: 5 * time.Second,
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout:   3 * time.Second,
+				KeepAlive: 60 * time.Second,
+			}).DialContext,
+			TLSHandshakeTimeout: 3 * time.Second,
+			DisableKeepAlives:   false,
+			MaxIdleConns:        256,
+			MaxIdleConnsPerHost: 256,
+		},
 	}
 )
 
 // Version returns package version
 func Version() string {
-	return "0.2.5"
+	return "0.6.0"
 }
 
 // Author returns package author
@@ -62,103 +84,82 @@ func License() string {
 	return "Licensed under the Apache License 2.0"
 }
 
-// New returns a new dnspod provider client
-func New() *Provider {
-	return &Provider{
-		provides: DefaultProvides,
+// NewClient returns a new provider client
+func NewClient() *Client {
+	return &Client{
+		provider: DefaultProvider,
 	}
 }
 
 // String returns string of provider
-func (c *Provider) String() string {
+func (c *Client) String() string {
 	return "dnspod"
 }
 
-// SetProvides set upstream provides type, dnspod does NOT supported
-func (c *Provider) SetProvides(p int) error {
-	c.provides = p
+// SetProvider set upstream provider type, dnspod does NOT supported
+func (c *Client) SetProvider(p provider) error {
+	if p >= lastProvider {
+		return fmt.Errorf("dnspod: invalid dns provider")
+	}
+	c.provider = p
 	return nil
 }
 
-// Query do DoH query
-func (c *Provider) Query(ctx context.Context, d dns.Domain, t dns.Type) (*dns.Response, error) {
-	return c.ECSQuery(ctx, d, t, "")
-}
-
-// ECSQuery do DoH query with the edns0-client-subnet option
-func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns.ECS) (*dns.Response, error) {
-	if t != dns.TypeA {
-		return nil, fmt.Errorf("doh: dnspod: only A record type is supported")
-	}
-
+// Query do DoH query with the edns0-client-subnet option
+func (c *Client) Query(ctx context.Context, d dns.Domain, t dns.Type, s ...dns.ECS) (*dns.Response, error) {
 	name, err := d.Punycode()
 	if err != nil {
 		return nil, err
 	}
 
-	param := xhttp.QueryParam{
-		"dn":  name,
-		"ttl": "1",
-	}
+	param := url.Values{}
+	param.Add("name", name)
+	param.Add("type", strings.TrimSpace(string(t)))
 
-	ss := strings.TrimSpace(string(s))
-	if ss != "" {
-		ss, err := xip.FixSubnet(ss)
-		if err != nil {
-			return nil, err
+	if len(s) > 0 {
+		ss := strings.TrimSpace(string(s[0]))
+		if ss != "" {
+			ss = strings.Split(ss, "/")[0]
+			param.Add("edns_client_subnet", ss)
 		}
-		ips := strings.Split(ss, "/")
-		param["ip"] = ips[0]
 	}
 
-	rsp, err := xhttp.New().Get(ctx, Upstream[c.provides], param)
+	dnsURL := fmt.Sprintf("%s?%s", upstreams[uint(c.provider)], param.Encode())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, dnsURL, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	defer rsp.Close()
-	if rsp.StatusCode != 200 {
-		return nil, fmt.Errorf("doh: dnspod: bad status code: %d", rsp.StatusCode)
+	req.Header.Set("Accept", "application/dns-json")
+	req.Header.Set("User-Agent", fmt.Sprintf("DoH Client/%s", Version()))
+
+	rsp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
 	}
 
-	txt, err := rsp.String()
+	defer rsp.Body.Close()
+	if rsp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("bad status code: %d", rsp.StatusCode)
+	}
+
+	data, err := io.ReadAll(rsp.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	rr := &dns.Response{
-		Status:   0,
-		TC:       false,
-		RD:       true,
-		RA:       true,
-		AD:       false,
-		CD:       false,
-		Question: []dns.Question{},
-		Answer:   []dns.Answer{},
 		Provider: c.String(),
 	}
-	rr.Question = append(rr.Question, dns.Question{Name: name, Type: 1})
 
-	txt = strings.TrimSpace(txt)
-	if txt == "" {
-		rr.Status = 3
-		return rr, fmt.Errorf("doh: dnspod: empty response from server")
+	err = json.Unmarshal(data, rr)
+	if err != nil {
+		return nil, err
 	}
 
-	ttl := 0
-	ts := strings.Split(txt, ",")
-	if len(ts) == 2 {
-		i, err := strconv.Atoi(ts[1])
-		if err == nil {
-			ttl = i
-		}
-	}
-
-	ts = strings.Split(ts[0], ";")
-	for _, v := range ts {
-		if xip.IsIP(v) {
-			rr.Answer = append(rr.Answer, dns.Answer{Name: name, Type: 1, TTL: ttl, Data: v})
-		}
+	if rr.Status != 0 {
+		return rr, fmt.Errorf("dnspod: bad response code: %d", rr.Status)
 	}
 
 	return rr, nil

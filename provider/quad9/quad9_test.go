@@ -22,7 +22,6 @@ package quad9
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/likexian/doh/dns"
 	"github.com/likexian/gokit/assert"
@@ -35,14 +34,20 @@ func TestVersion(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	c := New()
+	c := NewClient()
 	assert.Equal(t, c.String(), "quad9")
 }
 
 func TestQuery(t *testing.T) {
-	c := New()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	c := NewClient()
+
+	err := c.SetProvider(DefaultProvider)
+	assert.Nil(t, err)
+
+	err = c.SetProvider(100)
+	assert.NotNil(t, err)
+
+	ctx := context.Background()
 
 	rsp, err := c.Query(ctx, "likexian.com", dns.TypeA)
 	assert.Nil(t, err)
@@ -51,46 +56,28 @@ func TestQuery(t *testing.T) {
 	rsp, err = c.Query(ctx, "www.李.cn", dns.TypeA)
 	assert.Nil(t, err)
 	assert.Gt(t, len(rsp.Answer), 0)
-}
 
-func TestECSQuery(t *testing.T) {
-	c := New()
-
-	err := c.SetProvides(9999)
+	_, err = c.Query(ctx, "xx", dns.TypeA, "1.1.1.1")
 	assert.NotNil(t, err)
 
-	err = c.SetProvides(DefaultProvides)
-	assert.Nil(t, err)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	_, err = c.ECSQuery(ctx, "xx", dns.TypeA, "1.1.1.1")
+	_, err = c.Query(ctx, "likexian.com", dns.TypeA, "xx")
 	assert.NotNil(t, err)
 
-	_, err = c.ECSQuery(ctx, "likexian.com", dns.TypeA, "xx")
-	assert.NotNil(t, err)
-
-	rsp, err := c.ECSQuery(ctx, "likexian.com", dns.TypeA, "1.1.1.1")
+	rsp, err = c.Query(ctx, "likexian.com", dns.TypeA, "1.1.1.1")
 	assert.Nil(t, err)
 	assert.Gt(t, len(rsp.Answer), 0)
 
-	rsp, err = c.ECSQuery(ctx, "likexian.com", dns.TypeA, "1.1.1.1/24")
+	rsp, err = c.Query(ctx, "likexian.com", dns.TypeA, "1.1.1.1/24")
 	assert.Nil(t, err)
 	assert.Gt(t, len(rsp.Answer), 0)
 
-	Upstream[DefaultProvides] = "test"
-	_, err = c.ECSQuery(ctx, "likexian.com", dns.TypeA, "")
-	assert.NotNil(t, err)
-
-	Upstream[DefaultProvides] = "https://dns.quad9.net/dns"
-	_, err = c.ECSQuery(ctx, "likexian.com", dns.TypeA, "")
-	assert.NotNil(t, err)
-
-	err = c.SetProvides(UnsecuredProvides)
+	c.SetProvider(SecuredProvider)
+	rsp, err = c.Query(ctx, "likexian.com", dns.TypeA)
 	assert.Nil(t, err)
+	assert.Gt(t, len(rsp.Answer), 0)
 
-	rsp, err = c.ECSQuery(ctx, "likexian.com", dns.TypeA, "1.1.1.1")
+	c.SetProvider(UnsecuredProvider)
+	rsp, err = c.Query(ctx, "likexian.com", dns.TypeA)
 	assert.Nil(t, err)
 	assert.Gt(t, len(rsp.Answer), 0)
 }

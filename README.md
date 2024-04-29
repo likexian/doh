@@ -114,11 +114,11 @@ Google Public DNS is a recursive DNS resolver, similar to other publicly availab
 
 - https://developers.google.com/speed/public-dns/docs/dns-over-https
 
-### DNSPod (Fake DoH)
+### DNSPod (Work well in Mainland China)
 
-DNS over HTTP but NOT HTTPS and A record only. This is something known as HTTPDNS, provided by DNSPod (Tencent Cloud). The backend is a anycast public DNS platform well known in China.
+The backend is a anycast public DNS platform well known in China.
 
-- https://cloud.tencent.com/document/product/379/3524
+- https://docs.dnspod.cn/public-dns/dot-doh/
 
 ## LICENSE
 

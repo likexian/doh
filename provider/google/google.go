@@ -20,37 +20,59 @@
 package google
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"net/url"
 	"strings"
+	"time"
 
 	"github.com/likexian/doh/dns"
-	"github.com/likexian/gokit/xhttp"
 	"github.com/likexian/gokit/xip"
 )
 
-// Provider is a DoH provider client
-type Provider struct {
-	provides int
+// provider is provider
+type provider uint
+
+// Client is DoH provider client
+type Client struct {
+	provider provider
 }
 
 const (
-	// DefaultProvides is default provides
-	DefaultProvides = iota
+	// DefaultProvider is default provider
+	DefaultProvider = iota
+	// lastProvider is last provider
+	lastProvider
 )
 
 var (
-	// Upstream is DoH query upstream
-	Upstream = map[int]string{
-		DefaultProvides: "https://dns.google.com/resolve",
+	// upstreams is DoH upstreams
+	upstreams = map[uint]string{
+		DefaultProvider: "https://dns.google/resolve",
+	}
+	// httpClient is DoH http client
+	httpClient = &http.Client{
+		Timeout: 5 * time.Second,
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout:   3 * time.Second,
+				KeepAlive: 60 * time.Second,
+			}).DialContext,
+			TLSHandshakeTimeout: 3 * time.Second,
+			DisableKeepAlives:   false,
+			MaxIdleConns:        256,
+			MaxIdleConnsPerHost: 256,
+		},
 	}
 )
 
 // Version returns package version
 func Version() string {
-	return "0.5.4"
+	return "0.6.0"
 }
 
 // Author returns package author
@@ -63,57 +85,70 @@ func License() string {
 	return "Licensed under the Apache License 2.0"
 }
 
-// New returns a new google provider client
-func New() *Provider {
-	return &Provider{
-		provides: DefaultProvides,
+// NewClient returns a new provider client
+func NewClient() *Client {
+	return &Client{
+		provider: DefaultProvider,
 	}
 }
 
 // String returns string of provider
-func (c *Provider) String() string {
+func (c *Client) String() string {
 	return "google"
 }
 
-// SetProvides set upstream provides type, google does NOT supported
-func (c *Provider) SetProvides(p int) error {
-	c.provides = p
+// SetProvider set upstream provider type, google does NOT supported
+func (c *Client) SetProvider(p provider) error {
+	if p >= lastProvider {
+		return fmt.Errorf("google: invalid dns provider")
+	}
+	c.provider = p
 	return nil
 }
 
-// Query do DoH query
-func (c *Provider) Query(ctx context.Context, d dns.Domain, t dns.Type) (*dns.Response, error) {
-	return c.ECSQuery(ctx, d, t, "")
-}
-
-// ECSQuery do DoH query with the edns0-client-subnet option
-func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns.ECS) (*dns.Response, error) {
+// Query do DoH query with the edns0-client-subnet option
+func (c *Client) Query(ctx context.Context, d dns.Domain, t dns.Type, s ...dns.ECS) (*dns.Response, error) {
 	name, err := d.Punycode()
 	if err != nil {
 		return nil, err
 	}
 
-	param := xhttp.QueryParam{
-		"name": name,
-		"type": strings.TrimSpace(string(t)),
-	}
+	param := url.Values{}
+	param.Add("name", name)
+	param.Add("type", strings.TrimSpace(string(t)))
 
-	ss := strings.TrimSpace(string(s))
-	if ss != "" {
-		ss, err := xip.FixSubnet(ss)
-		if err != nil {
-			return nil, err
+	if len(s) > 0 {
+		ss := strings.TrimSpace(string(s[0]))
+		if ss != "" {
+			ss, err := xip.FixSubnet(ss)
+			if err != nil {
+				return nil, err
+			}
+			param.Add("edns_client_subnet", ss)
 		}
-		param["edns_client_subnet"] = ss
 	}
 
-	rsp, err := xhttp.New().Get(ctx, Upstream[c.provides], param, xhttp.Header{"accept": "application/dns-json"})
+	dnsURL := fmt.Sprintf("%s?%s", upstreams[uint(c.provider)], param.Encode())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, dnsURL, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	defer rsp.Close()
-	buf, err := rsp.Bytes()
+	req.Header.Set("Accept", "application/dns-json")
+	req.Header.Set("User-Agent", fmt.Sprintf("DoH Client/%s", Version()))
+
+	rsp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rsp.Body.Close()
+	if rsp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("bad status code: %d", rsp.StatusCode)
+	}
+
+	data, err := io.ReadAll(rsp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -121,13 +156,14 @@ func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns
 	rr := &dns.Response{
 		Provider: c.String(),
 	}
-	err = json.NewDecoder(bytes.NewBuffer(buf)).Decode(rr)
+
+	err = json.Unmarshal(data, rr)
 	if err != nil {
 		return nil, err
 	}
 
 	if rr.Status != 0 {
-		return rr, fmt.Errorf("doh: google: failed response code %d", rr.Status)
+		return rr, fmt.Errorf("google: bad response code: %d", rr.Status)
 	}
 
 	return rr, nil
