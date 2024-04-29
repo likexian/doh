@@ -48,7 +48,7 @@ func TestQuery(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Gt(t, len(rsp.Answer), 0)
 
-	rsp, err = c.Query(ctx, "www.网络.cn", dns.TypeA)
+	rsp, err = c.Query(ctx, "www.李.cn", dns.TypeA)
 	assert.Nil(t, err)
 	assert.Gt(t, len(rsp.Answer), 0)
 }

@@ -107,7 +107,9 @@ func (c *Provider) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns
 		param["edns_client_subnet"] = ss
 	}
 
-	rsp, err := xhttp.New().Get(ctx, Upstream[c.provides], param, xhttp.Header{"accept": "application/dns-json"})
+	headers := xhttp.Header{"Accept": "application/dns-json", "Content-Type": "application/dns-json"}
+
+	rsp, err := xhttp.New().Get(ctx, Upstream[c.provides], param, headers)
 	if err != nil {
 		return nil, err
 	}
