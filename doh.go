@@ -25,11 +25,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/likexian/doh-go/dns"
-	"github.com/likexian/doh-go/provider/cloudflare"
-	"github.com/likexian/doh-go/provider/dnspod"
-	"github.com/likexian/doh-go/provider/google"
-	"github.com/likexian/doh-go/provider/quad9"
+	"github.com/likexian/doh/dns"
+	"github.com/likexian/doh/provider/cloudflare"
+	"github.com/likexian/doh/provider/dnspod"
+	"github.com/likexian/doh/provider/google"
+	"github.com/likexian/doh/provider/quad9"
 	"github.com/likexian/gokit/xcache"
 	"github.com/likexian/gokit/xhash"
 )
@@ -70,7 +70,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.6.5"
+	return "0.7.0"
 }
 
 // Author returns package author

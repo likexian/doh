@@ -1,4 +1,4 @@
-module github.com/likexian/doh-go
+module github.com/likexian/doh
 
 go 1.21
 

@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/likexian/doh-go/dns"
+	"github.com/likexian/doh/dns"
 	"github.com/likexian/gokit/xhttp"
 	"github.com/likexian/gokit/xip"
 )
