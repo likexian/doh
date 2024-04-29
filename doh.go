@@ -70,7 +70,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.6.4"
+	return "0.6.5"
 }
 
 // Author returns package author
@@ -174,7 +174,7 @@ func (c *DoH) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns.ECS)
 		}
 		rsp, err := c.fastECSQuery(ctx, []Provider{c.providers[min[0].(int)]}, d, t, s)
 		if err == nil {
-			return rsp, err
+			return rsp, nil
 		}
 	}
 
@@ -182,7 +182,8 @@ func (c *DoH) ECSQuery(ctx context.Context, d dns.Domain, t dns.Type, s dns.ECS)
 }
 
 // fastECSQuery do query and returns the fastest result
-func (c *DoH) fastECSQuery(ctx context.Context, ps []Provider, d dns.Domain, t dns.Type, s dns.ECS) (*dns.Response, error) {
+func (c *DoH) fastECSQuery(ctx context.Context,
+	ps []Provider, d dns.Domain, t dns.Type, s dns.ECS) (*dns.Response, error) {
 	cacheKey := ""
 	if c.cache != nil {
 		cacheKey = xhash.Sha1(string(d), string(t), string(s)).Hex()

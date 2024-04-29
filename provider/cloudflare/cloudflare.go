@@ -50,7 +50,7 @@ var (
 
 // Version returns package version
 func Version() string {
-	return "0.5.3"
+	return "0.5.4"
 }
 
 // Author returns package author
@@ -77,7 +77,7 @@ func (c *Provider) String() string {
 
 // SetProvides set upstream provides type, cloudflare does NOT supported
 func (c *Provider) SetProvides(p int) error {
-	c.provides = DefaultProvides
+	c.provides = p
 	return nil
 }
 
